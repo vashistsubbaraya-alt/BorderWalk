@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Border Walk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;600&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EBF1EA;
+    --paper-line:#D8E2D6;
+    --ink:#17324E;
+    --ink-soft:#4A617A;
+    --stamp-red:#B23B32;
+    --stamp-teal:#2F6B5E;
+    --gold:#B98A2F;
+    --white:#FDFDFB;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:'Public Sans',system-ui,sans-serif;
+    background:
+      repeating-linear-gradient(0deg, transparent 0 34px, var(--paper-line) 34px 35px),
+      repeating-linear-gradient(90deg, transparent 0 34px, var(--paper-line) 34px 35px),
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:20px 14px 60px;
+  }
+  .page{width:100%;max-width:560px}
+
+  header{border-bottom:3px double var(--ink);padding-bottom:12px;margin-bottom:18px}
+  .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--ink-soft);text-transform:uppercase}
+  h1{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:44px;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+  h1 .walk{color:var(--stamp-red)}
+  .subline{font-size:13px;color:var(--ink-soft);margin-top:4px}
+
+  .mission{
+    background:var(--white);
+    border:1.5px solid var(--ink);
+    padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    box-shadow:3px 3px 0 rgba(23,50,78,.15);
+  }
+  .mission .route{font-family:'Saira Condensed',sans-serif;font-size:24px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;line-height:1.15}
+  .mission .arrow{color:var(--stamp-red)}
+  .mission .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right;white-space:nowrap}
+
+  .stamps{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 6px;min-height:44px;align-items:flex-start}
+  .stamp{
+    font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.05em;
+    border:2px dashed var(--stamp-teal);color:var(--stamp-teal);
+    border-radius:6px;padding:6px 10px 4px;background:rgba(47,107,94,.05);
+    position:relative;
+  }
+  .stamp small{display:block;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--ink-soft);text-transform:none}
+  .stamp.origin{border-color:var(--ink);color:var(--ink)}
+  .stamp.current{border-style:solid;border-color:var(--stamp-red);color:var(--stamp-red);background:rgba(178,59,50,.06)}
+  .stamp:nth-child(2n){transform:rotate(-2.2deg)}
+  .stamp:nth-child(2n+1){transform:rotate(1.6deg)}
+  .stamp:nth-child(3n){transform:rotate(2.8deg)}
+
+  .factline{font-size:13px;color:var(--ink-soft);min-height:20px;margin:2px 0 14px;font-style:italic}
+
+  .controls{position:relative}
+  .inputrow{display:flex;gap:8px}
+  input[type=text]{
+    flex:1;font-family:'Public Sans',sans-serif;font-size:16px;padding:12px 14px;
+    border:1.5px solid var(--ink);background:var(--white);color:var(--ink);border-radius:0;
+    outline:none;
+  }
+  input[type=text]:focus{box-shadow:3px 3px 0 rgba(178,59,50,.35)}
+  button{
+    font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.08em;text-transform:uppercase;
+    border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);
+    padding:12px 18px;cursor:pointer;border-radius:0;
+  }
+  button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:1px}
+  button.ghost{background:transparent;color:var(--ink)}
+  button:disabled{opacity:.4;cursor:default}
+  .suggest{
+    position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--white);
+    border:1.5px solid var(--ink);border-top:none;max-height:220px;overflow-y:auto;display:none;
+  }
+  .suggest div{padding:10px 14px;cursor:pointer;font-size:15px}
+  .suggest div.sel,.suggest div:hover{background:var(--paper)}
+  .msg{min-height:22px;margin-top:10px;font-size:14px;font-weight:600}
+  .msg.bad{color:var(--stamp-red)}
+  .msg.good{color:var(--stamp-teal)}
+
+  .toolbar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .toolbar button{font-size:13px;padding:8px 12px}
+
+  .hintbox{margin-top:12px;font-size:13.5px;background:var(--white);border-left:4px solid var(--gold);padding:10px 12px;display:none}
+  .hintbox b{font-weight:600}
+
+  .result{
+    display:none;margin-top:22px;background:var(--white);border:1.5px solid var(--ink);
+    box-shadow:4px 4px 0 rgba(23,50,78,.15);padding:18px 18px 14px;
+  }
+  .result h2{font-family:'Saira Condensed',sans-serif;font-size:30px;text-transform:uppercase;letter-spacing:.06em}
+  .result h2.win{color:var(--stamp-teal)}
+  .result h2.lose{color:var(--stamp-red)}
+  .result .detail{font-size:14px;margin:8px 0 12px;line-height:1.5}
+  .result .optimal{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);line-height:1.7}
+  .mrz{
+    margin-top:14px;padding-top:10px;border-top:1.5px dashed var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:var(--ink-soft);
+    word-break:break-all;line-height:1.6;
+  }
+  .result .actions{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
+
+  .reshead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .scorestamp{
+    flex:0 0 auto;width:86px;height:86px;border-radius:50%;
+    border:3px double var(--stamp-teal);color:var(--stamp-teal);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transform:rotate(8deg);background:rgba(47,107,94,.05);
+  }
+  .scorestamp .scorenum{font-family:'Saira Condensed',sans-serif;font-weight:700;font-size:34px;line-height:1}
+  .scorestamp .scorelabel{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.15em}
+  .scorestamp.mid{border-color:var(--gold);color:#7d611c;background:rgba(185,138,47,.08)}
+  .scorestamp.low{border-color:var(--stamp-red);color:var(--stamp-red);background:rgba(178,59,50,.06)}
+  @media (prefers-reduced-motion: no-preference){
+    .scorestamp{animation:stampIn .3s cubic-bezier(.2,1.6,.4,1)}
+  }
+
+  .cmp{margin-top:14px;padding-top:12px;border-top:1.5px dashed var(--ink-soft)}
+  .cmp .lanelabel{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--ink-soft);margin:8px 0 5px}
+  .ministamps{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+  .mini{font-family:'Saira Condensed',sans-serif;font-weight:600;font-size:12.5px;padding:3px 7px 2px;border:1.5px dashed;border-radius:4px;text-transform:uppercase;letter-spacing:.04em}
+  .mini.shared{border-color:var(--stamp-teal);color:var(--stamp-teal);background:rgba(47,107,94,.06)}
+  .mini.detour{border-color:var(--stamp-red);color:var(--stamp-red);background:rgba(178,59,50,.06)}
+  .mini.missed{border-color:var(--gold);color:#7d611c;background:rgba(185,138,47,.08)}
+  .sep{color:var(--ink-soft);font-size:11px}
+  .cmp .insight{font-size:13.5px;margin-top:10px}
+  .legend{display:flex;gap:14px;font-size:11px;color:var(--ink-soft);margin-top:10px;flex-wrap:wrap}
+  .legend i{font-style:normal;display:inline-block;width:10px;height:10px;border-radius:3px;border:1.5px dashed;margin-right:4px;vertical-align:-1px}
+  .legend .l-shared i{border-color:var(--stamp-teal);background:rgba(47,107,94,.15)}
+  .legend .l-detour i{border-color:var(--stamp-red);background:rgba(178,59,50,.15)}
+  .legend .l-missed i{border-color:var(--gold);background:rgba(185,138,47,.18)}
+
+  footer{margin-top:26px;font-size:12px;color:var(--ink-soft);line-height:1.6}
+  footer .stats{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:8px}
+  details{margin-top:8px}
+  summary{cursor:pointer;font-weight:600;color:var(--ink)}
+  details p{margin-top:6px}
+
+  .fb{margin-top:12px;font-size:13px}
+  .fb button{font-size:13px;padding:6px 10px;margin-left:6px}
+  .fb .thanks{color:var(--stamp-teal);font-weight:600;display:none}
+
+  .introOverlay{
+    display:none;position:fixed;inset:0;background:rgba(23,50,78,.55);
+    z-index:100;align-items:center;justify-content:center;padding:20px;
+  }
+  .introCard{
+    background:var(--white);border:1.5px solid var(--ink);max-width:480px;width:100%;
+    padding:22px 22px 18px;box-shadow:5px 5px 0 rgba(23,50,78,.2);max-height:86vh;overflow-y:auto;
+  }
+  .introCard h2{font-family:'Saira Condensed',sans-serif;font-size:26px;text-transform:uppercase;letter-spacing:.05em;margin:4px 0 12px}
+  .introCard h3{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 6px}
+  .introCard p{font-size:14px;line-height:1.55;margin-bottom:10px}
+  .introCard button{width:100%;margin-top:14px}
+
+  @media (prefers-reduced-motion: no-preference){
+    .stamp{animation:stampIn .25s cubic-bezier(.2,1.6,.4,1)}
+    @keyframes stampIn{from{transform:scale(1.6) rotate(-6deg);opacity:0}to{opacity:1}}
+  }
+  @media (max-width:420px){
+    h1{font-size:36px}
+    .mission .route{font-size:19px}
+  }
+</style>
+</head>
+<body>
+<div class="introOverlay" id="introOverlay">
+  <div class="introCard">
+    <div class="eyebrow">Welcome</div>
+    <h2>How Border Walk works</h2>
+    <p>Each day everyone gets the same start and target country. Type a neighboring country to cross into it — you can only move to a country that shares a land border with where you currently are. Keep hopping until you reach the target.</p>
+    <p>Try to get there in as few hops as possible: the fewer hops beyond the shortest possible route, the better your walk.</p>
+    <h3>Scoring</h3>
+    <p>Your score starts at 100 and drops 10 points for every hop beyond the optimal route. Any successful arrival scores at least 10. Giving up scores 0. Hints don't change your score, but are noted alongside your result.</p>
+    <button id="introCloseBtn">Let's walk</button>
+  </div>
+</div>
+<div class="page">
+  <header>
+    <div class="eyebrow">One puzzle a day &middot; Land borders only</div>
+    <h1>Border <span class="walk">Walk</span></h1>
+    <div class="subline">Cross the world one neighbor at a time. Fewer hops, better walk.</div>
+  </header>
+
+  <div class="mission">
+    <div class="route"><span id="startName"></span> <span class="arrow">&rarr;</span> <span id="targetName"></span></div>
+    <div class="meta" id="puzzleMeta"></div>
+  </div>
+
+  <div class="stamps" id="stamps"></div>
+  <div class="factline" id="factline"></div>
+
+  <div class="controls" id="controls">
+    <div class="inputrow">
+      <input type="text" id="guess" placeholder="Type a neighboring country&hellip;" autocomplete="off" aria-label="Next country">
+      <button id="goBtn">Cross</button>
+    </div>
+    <div class="suggest" id="suggest"></div>
+    <div class="msg" id="msg" role="status"></div>
+    <div class="toolbar">
+      <button class="ghost" id="undoBtn">&larr; Undo</button>
+      <button class="ghost" id="hintBtn">Show neighbors (hint)</button>
+      <button class="ghost" id="giveupBtn">Give up</button>
+    </div>
+    <div class="hintbox" id="hintbox"></div>
+  </div>
+
+  <div class="result" id="result">
+    <div class="reshead">
+      <div>
+        <h2 id="resTitle"></h2>
+        <div class="detail" id="resDetail"></div>
+      </div>
+      <div class="scorestamp" id="scoreStamp">
+        <span class="scorenum" id="scoreNum"></span>
+        <span class="scorelabel">/ 100</span>
+      </div>
+    </div>
+    <div class="cmp" id="cmp"></div>
+    <div class="mrz" id="mrz"></div>
+    <div class="actions">
+      <button id="shareBtn">Copy result</button>
+      <button class="ghost" id="practiceBtn">Practice round</button>
+    </div>
+    <div class="fb">Was today's walk fun?
+      <button class="ghost" data-fb="up">&#128077;</button>
+      <button class="ghost" data-fb="down">&#128078;</button>
+      <span class="thanks" id="fbThanks">Noted &mdash; thanks!</span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="stats" id="stats"></div>
+    <details>
+      <summary>Rules &amp; conventions</summary>
+      <p>Each day everyone gets the same start and target country. Type a neighboring country to cross into it — you can only move to a country that shares a land border with where you currently are — and try to reach the target in as few hops as possible.</p>
+      <p>Scoring: your score starts at 100 and drops 10 points for every hop beyond the optimal route. Any successful arrival scores at least 10. Giving up scores 0. Hints don't change your score, but are noted alongside your result.</p>
+      <p>Move only between countries that share a land border. Island nations without land borders sit out for now. Kaliningrad counts for Russia; Ceuta &amp; Melilla connect Spain to Morocco; Nakhchivan connects Azerbaijan to Turkey. The daily route is the same for every player.</p>
+    </details>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+const ADJ = {};
+for (const [a,b] of EDGES){
+  (ADJ[a] = ADJ[a] || new Set()).add(b);
+  (ADJ[b] = ADJ[b] || new Set()).add(a);
+}
+const COUNTRIES = Object.keys(ADJ).sort();
+
+// ---------- helpers ----------
+function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function bfs(start){
+  const dist={[start]:0}, parent={[start]:null}, q=[start];
+  while(q.length){
+    const c=q.shift();
+    for(const n of ADJ[c]) if(!(n in dist)){dist[n]=dist[c]+1;parent[n]=c;q.push(n)}
+  }
+  return {dist,parent};
+}
+function pathTo(parent,node){const p=[];while(node){p.unshift(node);node=parent[node]}return p}
+
+const today = new Date();
+const dayNum = Math.floor((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate())-LAUNCH)/86400000)+1;
+
+function makePuzzle(seed){
+  const rng = mulberry32(seed*2654435761 % 2147483647 + 7);
+  const starts = [...COUNTRIES];
+  for(let i=starts.length-1;i>0;i--){
+    const j=Math.floor(rng()*(i+1));
+    [starts[i],starts[j]]=[starts[j],starts[i]];
+  }
+  for(const start of starts){
+    if(ADJ[start].size<2) continue;
+    const {dist,parent} = bfs(start);
+    const targets = COUNTRIES.filter(c=>dist[c]>=4 && dist[c]<=8 && ADJ[c].size>=2);
+    if(!targets.length) continue;
+    const target = targets[Math.floor(rng()*targets.length)];
+    return {start,target,optimal:dist[target],optimalPath:pathTo(parent,target)};
+  }
+}
+
+// ---------- state ----------
+let puzzle, path, finished, hintsUsed, isDaily;
+const $ = id=>document.getElementById(id);
+
+function startGame(seed, daily){
+  isDaily = daily;
+  puzzle = makePuzzle(seed);
+  path = [puzzle.start];
+  finished = false; hintsUsed = 0;
+  $('startName').textContent = puzzle.start;
+  $('targetName').textContent = puzzle.target;
+  $('puzzleMeta').innerHTML = daily ? ('DAILY&nbsp;#'+dayNum) : 'PRACTICE';
+  $('result').style.display='none';
+  $('controls').style.display='block';
+  $('msg').textContent=''; $('hintbox').style.display='none';
+  $('factline').textContent = fact(puzzle.start);
+  render();
+  const done = daily && localStorage.getItem('bw_done_'+dayNum);
+  if(done){ const d=JSON.parse(done); if(d.path) path=d.path; render(); finishGame(d.won,true,d.hops,d.hints); }
+  $('guess').focus();
+}
+function fact(c){ return c+' shares a land border with '+ADJ[c].size+(ADJ[c].size===1?' country.':' countries.') }
+function current(){ return path[path.length-1] }
+
+function render(){
+  const el=$('stamps'); el.innerHTML='';
+  path.forEach((c,i)=>{
+    const s=document.createElement('div');
+    s.className='stamp'+(i===0?' origin':'')+(i===path.length-1&&i>0?' current':'');
+    s.innerHTML=c+'<small>'+(i===0?'ORIGIN':'HOP '+i)+'</small>';
+    el.appendChild(s);
+  });
+  $('undoBtn').disabled = path.length<2 || finished;
+}
+
+function tryHop(name){
+  if(finished) return;
+  const match = COUNTRIES.find(c=>c.toLowerCase()===name.trim().toLowerCase());
+  const msg=$('msg');
+  if(!match){ msg.className='msg bad'; msg.textContent='Not in the atlas — check the spelling (island nations sit out v1).'; return; }
+  if(match===current()){ msg.className='msg bad'; msg.textContent="You're already in "+match+'.'; return; }
+  if(!ADJ[current()].has(match)){ msg.className='msg bad'; msg.textContent=match+' does not share a land border with '+current()+'.'; return; }
+  path.push(match);
+  $('guess').value=''; hideSuggest();
+  $('hintbox').style.display='none';
+  msg.className='msg good'; msg.textContent='Border crossed.';
+  $('factline').textContent = fact(match);
+  render();
+  if(match===puzzle.target) finishGame(true,false,path.length-1,hintsUsed);
+}
+
+function score(won,hops){ return won ? Math.max(10, 100 - 10*(hops-puzzle.optimal)) : 0 }
+
+function finishGame(won, restored, hops, hints){
+  finished=true;
+  $('controls').style.display='none';
+  const r=$('result'); r.style.display='block';
+  const t=$('resTitle');
+  if(won){ t.textContent='Arrived'; t.className='win'; }
+  else { t.textContent='Walk abandoned'; t.className='lose'; }
+  const sc = score(won,hops);
+  const stamp=$('scoreStamp');
+  stamp.className='scorestamp'+(sc>=90?'':sc>=60?' mid':' low');
+  $('scoreNum').textContent=sc;
+  const diff = won ? hops-puzzle.optimal : null;
+  const math = won
+    ? (diff===0 ? 'Optimal walk = full score.' : '100 &minus; 10 &times; '+diff+' extra hop'+(diff===1?'':'s')+(sc===10&&100-10*diff<10?' (floored at 10 for arriving)':'')+' = '+sc+'.')
+    : 'No arrival, no points. Optimal was '+puzzle.optimal+' hops.';
+  $('resDetail').innerHTML = (won
+    ? 'You made it in <b>'+hops+' hop'+(hops===1?'':'s')+'</b> (optimal: <b>'+puzzle.optimal+'</b>)'
+      +(diff===0?' — a perfect walk. 🏆':diff<=2?' — close!':'')
+      +(hints?'<br>Hints used: '+hints:'')
+    : 'No stamp today.')
+    +'<br><span style="color:var(--ink-soft);font-size:12.5px">'+math+'</span>';
+  renderComparison(won);
+  $('mrz').textContent = mrz(won,hops,hints);
+  if(isDaily && !restored){
+    localStorage.setItem('bw_done_'+dayNum, JSON.stringify({won,hops,hints,path}));
+    bumpStats(won);
+  }
+  renderStats();
+}
+
+function renderComparison(won){
+  const opt = puzzle.optimalPath;
+  const inOpt = new Set(opt), inUser = new Set(path);
+  const lane = (arr, mine) => arr.map(c=>{
+    const cls = mine ? (inOpt.has(c)?'shared':'detour') : (inUser.has(c)?'shared':'missed');
+    return '<span class="mini '+cls+'">'+c+'</span>';
+  }).join('<span class="sep">&rsaquo;</span>');
+  let i=0; while(i<path.length && i<opt.length && path[i]===opt[i]) i++;
+  let insight;
+  if(won && path.length===opt.length) insight='Perfect walk &mdash; you matched an optimal route stamp for stamp.';
+  else if(i<=1) insight='Your route split from the optimal one right at the start, in <b>'+path[0]+'</b>.';
+  else insight='You matched an optimal route until <b>'+path[i-1]+'</b> &mdash; that\u2019s where the paths split.';
+  if(!won) insight += ' The gold stamps show the crossings you never made.';
+  $('cmp').innerHTML =
+    '<div class="lanelabel">YOUR WALK'+(won?'':' (UNFINISHED)')+' &middot; '+(path.length-1)+' HOPS</div>'
+    +'<div class="ministamps">'+lane(path,true)+'</div>'
+    +'<div class="lanelabel">OPTIMAL ROUTE &middot; '+puzzle.optimal+' HOPS</div>'
+    +'<div class="ministamps">'+lane(opt,false)+'</div>'
+    +'<div class="insight">'+insight+'</div>'
+    +'<div class="legend">'
+    +'<span class="l-shared"><i></i>On both routes</span>'
+    +'<span class="l-detour"><i></i>Your detour</span>'
+    +'<span class="l-missed"><i></i>Missed shortcut</span>'
+    +'</div>';
+}
+function mrz(won,hops,hints){
+  const pad=s=>s.toUpperCase().replace(/[^A-Z]/g,'<');
+  return 'P<BORDERWALK<'+(isDaily?String(dayNum).padStart(3,'0'):'PRC')+'<'+pad(puzzle.start)+'<<'+pad(puzzle.target)
+    +'<<'+(won?hops+'HOPS':'DNF')+'<OPT'+puzzle.optimal+'<S'+String(score(won,hops)).padStart(3,'0')+(hints?'<H'+hints:'')+'<<<<<<';
+}
+
+function bumpStats(won){
+  const s = JSON.parse(localStorage.getItem('bw_stats')||'{"played":0,"won":0,"streak":0,"last":0}');
+  s.played++; if(won){ s.won++; s.streak = (s.last===dayNum-1)?s.streak+1:1; s.last=dayNum; } else { s.streak=0; s.last=dayNum; }
+  localStorage.setItem('bw_stats',JSON.stringify(s));
+}
+function renderStats(){
+  const s = JSON.parse(localStorage.getItem('bw_stats')||'{"played":0,"won":0,"streak":0}');
+  $('stats').textContent = 'PLAYED '+s.played+'  ·  ARRIVED '+s.won+'  ·  STREAK '+s.streak;
+}
+
+// ---------- autocomplete ----------
+let selIdx=-1;
+function showSuggest(){
+  const v=$('guess').value.trim().toLowerCase();
+  const box=$('suggest');
+  if(!v){hideSuggest();return}
+  const hits=COUNTRIES.filter(c=>c.toLowerCase().includes(v)).slice(0,6);
+  if(!hits.length){hideSuggest();return}
+  box.innerHTML=''; selIdx=-1;
+  hits.forEach(c=>{
+    const d=document.createElement('div'); d.textContent=c;
+    d.onmousedown=e=>{e.preventDefault();tryHop(c)};
+    box.appendChild(d);
+  });
+  box.style.display='block';
+}
+function hideSuggest(){$('suggest').style.display='none';selIdx=-1}
+$('guess').addEventListener('input',showSuggest);
+$('guess').addEventListener('blur',()=>setTimeout(hideSuggest,120));
+$('guess').addEventListener('keydown',e=>{
+  const box=$('suggest'), items=[...box.children];
+  if(e.key==='ArrowDown'&&items.length){e.preventDefault();selIdx=(selIdx+1)%items.length;items.forEach((d,i)=>d.classList.toggle('sel',i===selIdx))}
+  else if(e.key==='ArrowUp'&&items.length){e.preventDefault();selIdx=(selIdx-1+items.length)%items.length;items.forEach((d,i)=>d.classList.toggle('sel',i===selIdx))}
+  else if(e.key==='Enter'){
+    e.preventDefault();
+    if(selIdx>=0&&items[selIdx]) tryHop(items[selIdx].textContent);
+    else if(box.style.display==='block'&&items.length===1) tryHop(items[0].textContent);
+    else tryHop($('guess').value);
+  }
+});
+$('goBtn').onclick=()=>tryHop($('guess').value);
+
+// ---------- toolbar ----------
+$('undoBtn').onclick=()=>{ if(path.length>1&&!finished){path.pop();$('factline').textContent=fact(current());$('msg').textContent='';render()} };
+$('hintBtn').onclick=()=>{
+  hintsUsed++;
+  const box=$('hintbox');
+  box.innerHTML='<b>'+current()+'</b> borders: '+[...ADJ[current()]].sort().join(', ');
+  box.style.display='block';
+};
+$('giveupBtn').onclick=()=>finishGame(false,false,path.length-1,hintsUsed);
+$('practiceBtn').onclick=()=>startGame(Math.floor(Math.random()*1e9),false);
+
+$('shareBtn').onclick=async()=>{
+  const won = current()===puzzle.target;
+  const hops = path.length-1;
+  const sc = score(won,hops);
+  const emoji = !won ? '😵' : sc>=100 ? '🏆' : sc>=90 ? '🎉' : sc>=60 ? '🙂' : '😅';
+  const hintsNote = hintsUsed ? ' ('+hintsUsed+' hint'+(hintsUsed>1?'s':'')+' used)' : '';
+  const resultLine = won
+    ? 'I arrived in '+hops+' hop'+(hops===1?'':'s')+' and scored '+sc+'/100'+hintsNote+' '+emoji
+    : 'I drifted mid way and scored '+sc+'/100'+hintsNote+' '+emoji;
+  const txt = resultLine
+    +'\nHow many hops do you need?'
+    +'\nFind out here -> '+location.origin+location.pathname;
+  try{ await navigator.clipboard.writeText(txt); $('shareBtn').textContent='Copied!'; }
+  catch(e){ prompt('Copy your result:',txt); }
+  setTimeout(()=>$('shareBtn').textContent='Copy result',1500);
+};
+
+document.querySelectorAll('[data-fb]').forEach(b=>b.onclick=()=>{
+  localStorage.setItem('bw_fb_'+dayNum,b.dataset.fb);
+  $('fbThanks').style.display='inline';
+});
+
+// ---------- intro ----------
+if(!localStorage.getItem('bw_seen_intro')) $('introOverlay').style.display='flex';
+$('introCloseBtn').onclick=()=>{
+  localStorage.setItem('bw_seen_intro','1');
+  $('introOverlay').style.display='none';
+};
+
+// ---------- go ----------
+startGame(dayNum, true);
+renderStats();
+</script>
+</body>
+</html>
