@@ -1,0 +1,11 @@
+name = "border-walk"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "e31e3665ba1b4e2fb8eb2458b6512b41"

@@ -251,6 +251,7 @@
 
   <footer>
     <div class="stats" id="stats"></div>
+    <p>We collect anonymous, aggregate play stats (votes, completions, scores) to improve the game — no accounts, no personal data, no tracking cookies.</p>
     <details>
       <summary>Rules &amp; conventions</summary>
       <p>Each day everyone gets the same start and target country. Type a neighboring country to cross into it — you can only move to a country that shares a land border with where you currently are — and try to reach the target in as few hops as possible.</p>
@@ -379,6 +380,7 @@ function finishGame(won, restored, hops, hints){
   if(isDaily && !restored){
     localStorage.setItem('bw_done_'+dayNum, JSON.stringify({won,hops,hints,path}));
     bumpStats(won);
+    fetch('/complete',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({day:dayNum,won,hops,score:sc,hints})}).catch(()=>{});
   }
   renderStats();
 }
@@ -484,6 +486,9 @@ $('shareBtn').onclick=async()=>{
 };
 
 document.querySelectorAll('[data-fb]').forEach(b=>b.onclick=()=>{
+  if(!localStorage.getItem('bw_fb_'+dayNum)){
+    fetch('/vote',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({day:dayNum,vote:b.dataset.fb})}).catch(()=>{});
+  }
   localStorage.setItem('bw_fb_'+dayNum,b.dataset.fb);
   $('fbThanks').style.display='inline';
 });
@@ -499,5 +504,8 @@ $('introCloseBtn').onclick=()=>{
 startGame(dayNum, true);
 renderStats();
 </script>
+<!-- TODO: Cloudflare Web Analytics — paste your beacon token from the dashboard
+     (Analytics & Logs -> Web Analytics -> Add a site) into data-cf-beacon below. -->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "TODO_CF_BEACON_TOKEN"}'></script>
 </body>
 </html>
