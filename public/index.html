@@ -46,8 +46,12 @@
     display:flex;align-items:center;justify-content:space-between;gap:10px;
     box-shadow:3px 3px 0 rgba(23,50,78,.15);
   }
-  .mission .route{font-family:'Saira Condensed',sans-serif;font-size:24px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;line-height:1.15}
-  .mission .arrow{color:var(--stamp-red)}
+  .mission .route{display:flex;align-items:center;gap:10px}
+  .mission .leg{display:flex;flex-direction:column;line-height:1.15}
+  .mission .tag{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.16em;color:var(--ink-soft)}
+  .mission .name{font-family:'Saira Condensed',sans-serif;font-size:24px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .mission #targetName{color:var(--stamp-red)}
+  .mission .arrow{color:var(--stamp-red);font-size:20px}
   .mission .meta{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-align:right;white-space:nowrap}
 
   .stamps{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 6px;min-height:44px;align-items:flex-start}
@@ -66,8 +70,7 @@
 
   .factline{font-size:13px;color:var(--ink-soft);min-height:20px;margin:2px 0 14px;font-style:italic}
 
-  .controls{position:relative}
-  .inputrow{display:flex;gap:8px}
+  .inputrow{position:relative;display:flex;gap:8px}
   input[type=text]{
     flex:1;font-family:'Public Sans',sans-serif;font-size:16px;padding:12px 14px;
     border:1.5px solid var(--ink);background:var(--white);color:var(--ink);border-radius:0;
@@ -83,8 +86,8 @@
   button.ghost{background:transparent;color:var(--ink)}
   button:disabled{opacity:.4;cursor:default}
   .suggest{
-    position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--white);
-    border:1.5px solid var(--ink);border-top:none;max-height:220px;overflow-y:auto;display:none;
+    position:absolute;left:0;right:0;bottom:100%;z-index:10;background:var(--white);
+    border:1.5px solid var(--ink);border-bottom:none;max-height:220px;overflow-y:auto;display:none;
   }
   .suggest div{padding:10px 14px;cursor:pointer;font-size:15px}
   .suggest div.sel,.suggest div:hover{background:var(--paper)}
@@ -173,7 +176,7 @@
   }
   @media (max-width:420px){
     h1{font-size:36px}
-    .mission .route{font-size:19px}
+    .mission .name{font-size:19px}
   }
 </style>
 </head>
@@ -197,7 +200,11 @@
   </header>
 
   <div class="mission">
-    <div class="route"><span id="startName"></span> <span class="arrow">&rarr;</span> <span id="targetName"></span></div>
+    <div class="route">
+      <div class="leg"><span class="tag">Origin</span><span class="name" id="startName"></span></div>
+      <span class="arrow">&rarr;</span>
+      <div class="leg"><span class="tag">Destination</span><span class="name" id="targetName"></span></div>
+    </div>
     <div class="meta" id="puzzleMeta"></div>
   </div>
 
@@ -208,11 +215,10 @@
     <div class="inputrow">
       <input type="text" id="guess" placeholder="Type a neighboring country&hellip;" autocomplete="off" aria-label="Next country">
       <button id="goBtn">Cross</button>
+      <div class="suggest" id="suggest"></div>
     </div>
-    <div class="suggest" id="suggest"></div>
     <div class="msg" id="msg" role="status"></div>
     <div class="toolbar">
-      <button class="ghost" id="undoBtn">&larr; Undo</button>
       <button class="ghost" id="hintBtn">Show neighbors (hint)</button>
       <button class="ghost" id="giveupBtn">Give up</button>
     </div>
@@ -327,7 +333,6 @@ function render(){
     s.innerHTML=c+'<small>'+(i===0?'ORIGIN':'HOP '+i)+'</small>';
     el.appendChild(s);
   });
-  $('undoBtn').disabled = path.length<2 || finished;
 }
 
 function tryHop(name){
@@ -452,7 +457,6 @@ $('guess').addEventListener('keydown',e=>{
 $('goBtn').onclick=()=>tryHop($('guess').value);
 
 // ---------- toolbar ----------
-$('undoBtn').onclick=()=>{ if(path.length>1&&!finished){path.pop();$('factline').textContent=fact(current());$('msg').textContent='';render()} };
 $('hintBtn').onclick=()=>{
   hintsUsed++;
   const box=$('hintbox');
